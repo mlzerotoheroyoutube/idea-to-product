@@ -1,0 +1,9 @@
+{
+  "name": "idea-to-product",
+  "version": "1.0.0",
+  "description": "Your always-on product team: say, type, sketch or snap an idea; Grok builds the prototype, ships a repo + MVP, and remembers how you work. Usable from Grok Bot via MCP.",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": { "start": "node server.mjs" }
+}

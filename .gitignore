@@ -1,0 +1,9 @@
+.env
+memory.json
+memory.json.*
+uploads/
+node_modules/
+.claude/
+.DS_Store
+server.log
+*.log

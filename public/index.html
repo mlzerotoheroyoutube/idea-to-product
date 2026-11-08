@@ -1,0 +1,1416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Idea → Product</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #09090b; --surface: #111114; --raised: #18181c; --inset: #0c0c0f;
+    --line: rgba(255,255,255,.07); --line-strong: rgba(255,255,255,.12);
+    --text: #ededf0; --dim: #8a8a94; --faint: #5c5c66;
+    --accent: #6d7cff; --accent-2: #9b6dff; --accent-soft: rgba(109,124,255,.14);
+    --ok: #34d399; --warn: #fbbf24; --hot: #f87171;
+    --r-lg: 14px; --r-md: 10px; --r-sm: 8px;
+    --shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 12px 32px rgba(0,0,0,.35);
+    --ease: cubic-bezier(.2,.8,.2,1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.5 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; overflow: hidden;
+    background: radial-gradient(1200px 500px at 70% -10%, rgba(109,124,255,.08), transparent 60%), var(--bg); }
+  svg.i { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ---- header ---- */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: rgba(9,9,11,.7); backdrop-filter: blur(10px); }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .logo { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 4px 16px rgba(109,124,255,.35); }
+  .logo svg { width: 16px; height: 16px; stroke: #fff; }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -.01em; white-space: nowrap; }
+  .brand-sub { color: var(--dim); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 12px; border-left: 1px solid var(--line-strong); }
+  .brand-sub b { color: var(--text); font-weight: 500; }
+  .status { display: flex; gap: 8px; align-items: center; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); font: 500 13px Inter, sans-serif; }
+  button.pill:hover { background: var(--raised); }
+  .memcount { font: 500 11px "JetBrains Mono", monospace; color: var(--dim); background: var(--raised); border: 1px solid var(--line); padding: 0 6px; border-radius: 999px; line-height: 18px; }
+  .runpill { font: 500 12px "JetBrains Mono", monospace; color: var(--dim); }
+  #statusText { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #timer { color: var(--text); min-width: 46px; text-align: right; padding-left: 8px; border-left: 1px solid var(--line-strong); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); display: inline-block; flex: none; }
+  .dot.live { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); animation: pulse 1.2s infinite; }
+  .dot.ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(52,211,153,.15); }
+  @keyframes pulse { 50% { opacity: .4; } }
+
+  /* ---- layout ---- */
+  main { display: grid; grid-template-columns: 380px 1fr; gap: 16px; padding: 16px 20px; min-height: 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); position: relative; min-height: 0; box-shadow: var(--shadow); }
+  .left { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: auto; }
+  .panel { padding: 16px; display: grid; gap: 12px; }
+  .label { font: 500 11px "JetBrains Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); display: flex; justify-content: space-between; align-items: center; }
+  .label .step-n { color: var(--faint); }
+
+  /* ---- controls ---- */
+  button { font: 500 14px Inter, sans-serif; border: 1px solid var(--line-strong); background: var(--raised); color: var(--text); border-radius: var(--r-md); padding: 0 14px; height: 40px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s, border-color .15s, transform .08s, opacity .15s; white-space: nowrap; }
+  button:hover { background: #202026; border-color: rgba(255,255,255,.18); }
+  button:active { transform: scale(.98); }
+  button:disabled { opacity: .38; cursor: not-allowed; transform: none; }
+  button.primary { background: var(--text); color: #0a0a0c; border-color: transparent; font-weight: 600; }
+  button.primary:hover { background: #fff; }
+  button.ghost { background: transparent; border-color: var(--line); color: var(--dim); }
+  button.ghost:hover { color: var(--text); background: var(--raised); }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; min-width: 0; }
+  .ideabox { display: flex; gap: 8px; align-items: stretch; background: var(--inset); border: 1px solid var(--line-strong); border-radius: 12px; padding: 6px; transition: border-color .15s, box-shadow .15s; }
+  .ideabox:focus-within { border-color: rgba(109,124,255,.6); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .ideabox input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: var(--text); font: 15px Inter, sans-serif; padding: 8px 8px; }
+  .ideabox button { height: 38px; padding: 0 14px; }
+  input[type=text].plain { width: 100%; font: 13px Inter, sans-serif; background: var(--inset); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 9px 11px; outline: none; }
+  input[type=text].plain:focus { border-color: rgba(109,124,255,.5); }
+  input::placeholder { color: var(--faint); }
+  .kinds { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; padding: 3px; background: var(--inset); border: 1px solid var(--line); border-radius: var(--r-md); }
+  .kinds button { height: 30px; padding: 0 4px; font-size: 12px; border: 0; background: transparent; color: var(--dim); border-radius: 7px; }
+  .kinds button:hover { background: var(--raised); color: var(--text); }
+  .kinds button.on { background: var(--raised); color: var(--text); box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 1px 3px rgba(0,0,0,.4); }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 16px 0 14px; }
+  .tabs button { height: 36px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; color: var(--dim); padding: 0 12px; }
+  .tabs button.on { color: var(--text); border-bottom-color: var(--accent); }
+  .tabs button .memcount { margin-left: 2px; }
+  .ideas .task { display: flex; gap: 12px; align-items: flex-start; }
+  .ideas .task input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
+  .ideas .task.done .tt { text-decoration: line-through; color: var(--dim); }
+  .ideas .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .ideas .meta span { font: 11px "JetBrains Mono", monospace; color: var(--dim); background: var(--raised); border-radius: 4px; padding: 1px 6px; }
+  .ideas .meta .due { color: var(--warn); }
+  .ideas .del { margin-left: auto; height: 24px; padding: 0 8px; background: none; border: 0; color: var(--faint); }
+  .jobs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .jobs button { height: 34px; font-size: 12px; padding: 0 6px; background: var(--inset); border-color: var(--line); color: var(--dim); }
+  .jobs button:hover:not(:disabled) { color: var(--text); border-color: rgba(109,124,255,.45); background: var(--accent-soft); }
+  .jobs button.running { color: var(--text); border-color: var(--accent); }
+  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .modes button { height: 64px; flex-direction: column; gap: 4px; font-size: 12px; color: var(--dim); background: var(--inset); border-color: var(--line); }
+  .modes button svg { width: 18px; height: 18px; color: var(--text); }
+  .modes button:hover { color: var(--text); border-color: rgba(109,124,255,.45); background: var(--accent-soft); }
+  kbd { font: 500 10px "JetBrains Mono", monospace; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; color: var(--dim); line-height: 15px; }
+  .ship { height: 48px; font-size: 15px; background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important; color: #fff !important; border: 0 !important; box-shadow: 0 8px 24px rgba(109,124,255,.3); }
+  .ship:hover:not(:disabled) { filter: brightness(1.08); }
+  .ship:not(:disabled) { animation: glow 2.4s infinite; }
+  .ship kbd { color: rgba(255,255,255,.75); border-color: rgba(255,255,255,.35); }
+  @keyframes glow { 0% { box-shadow: 0 8px 24px rgba(109,124,255,.3), 0 0 0 0 rgba(109,124,255,.45); } 70% { box-shadow: 0 8px 24px rgba(109,124,255,.3), 0 0 0 10px rgba(109,124,255,0); } }
+  .hint { font-size: 12px; color: var(--faint); }
+
+  /* ---- camera ---- */
+  .left > * { flex: none; }
+  .left > .cam { flex: 1 1 0; min-height: 150px; max-height: 320px; }
+  .cam { overflow: hidden; background: #000; display: grid; place-items: center; }
+  .cam video, .cam img { width: 100%; height: 100%; object-fit: cover; }
+  .cam video { transform: scaleX(-1); }
+  .cam img { position: absolute; inset: 0; display: none; }
+  .cam.shot img { display: block; }
+  .cam-nocam { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--faint); font-size: 12px; pointer-events: none; }
+  .cam-label { position: absolute; left: 10px; top: 10px; font: 500 10px "JetBrains Mono", monospace; letter-spacing: .08em; text-transform: uppercase; background: rgba(0,0,0,.6); backdrop-filter: blur(6px); color: #fff; padding: 4px 8px; border-radius: 6px; }
+  .cam .retake { position: absolute; right: 10px; top: 8px; height: 28px; padding: 0 10px; font-size: 12px; background: rgba(0,0,0,.6); border-color: rgba(255,255,255,.15); backdrop-filter: blur(6px); }
+  .flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  .flash.go { animation: flash .5s ease-out; }
+  @keyframes flash { 0% { opacity: .95; } 100% { opacity: 0; } }
+  .count { position: absolute; inset: 0; display: grid; place-items: center; font-size: 120px; font-weight: 700; color: #fff; text-shadow: 0 6px 40px rgba(0,0,0,.6); pointer-events: none; }
+
+  /* ---- stage ---- */
+  .right { display: grid; grid-template-rows: 1fr 176px; gap: 12px; min-height: 0; }
+  .stage { display: grid; grid-template-rows: 40px 1fr; overflow: hidden; }
+  .chrome { display: flex; align-items: center; gap: 12px; padding: 0 14px; border-bottom: 1px solid var(--line); background: var(--raised); }
+  .lights { display: flex; gap: 6px; }
+  .lights i { width: 10px; height: 10px; border-radius: 50%; background: #2a2a31; }
+  .addr { flex: 1; max-width: 460px; margin: 0 auto; height: 24px; border-radius: 6px; background: var(--inset); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; gap: 6px; font: 12px "JetBrains Mono", monospace; color: var(--dim); overflow: hidden; white-space: nowrap; }
+  .chrome-r { font: 500 11px "JetBrains Mono", monospace; color: var(--faint); min-width: 60px; text-align: right; }
+  .viewport { position: relative; min-height: 0; background: #fff; }
+  .viewport iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+  .empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; background: var(--surface);
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.05) 1px, transparent 0); background-size: 22px 22px; }
+  .hero { max-width: 560px; padding: 24px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; font: 500 11px "JetBrains Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border: 1px solid rgba(109,124,255,.25); padding: 4px 10px; border-radius: 999px; }
+  .hero h2 { font-size: 40px; line-height: 1.1; letter-spacing: -.035em; margin: 16px 0 10px; font-weight: 700; }
+  .hero h2 span { background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { color: var(--dim); font-size: 15px; margin: 0 auto; max-width: 460px; }
+  .flow { display: flex; justify-content: center; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+  .flow span { font-size: 12px; color: var(--dim); background: var(--raised); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; }
+  .flow span::before { content: attr(data-n); color: var(--faint); font-family: "JetBrains Mono", monospace; margin-right: 6px; }
+
+  .done-badge { position: absolute; right: 16px; top: 16px; background: rgba(10,10,12,.92); color: #fff; border: 1px solid var(--line-strong); padding: 8px 14px; border-radius: 999px; font-weight: 600; font-size: 13px; opacity: 0; transform: translateY(-6px); transition: all .4s var(--ease); pointer-events: none; box-shadow: var(--shadow); z-index: 4; }
+  .done-badge.show { opacity: 1; transform: none; }
+
+  /* ---- suggestion tray ---- */
+  .tray { position: absolute; left: 16px; right: 16px; bottom: 16px; max-width: 760px; margin: 0 auto; background: rgba(17,17,20,.96); backdrop-filter: blur(14px); border: 1px solid var(--line-strong); border-radius: var(--r-lg); padding: 14px 16px; color: var(--text); box-shadow: 0 24px 64px rgba(0,0,0,.5); transform: translateY(14px); opacity: 0; pointer-events: none; transition: all .35s var(--ease); z-index: 5; }
+  .tray.show { transform: none; opacity: 1; pointer-events: auto; }
+  .tray .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .tray .kicker { font: 500 10px "JetBrains Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  .tray .x { background: none; border: 0; color: var(--dim); height: 24px; padding: 0 6px; font-size: 18px; }
+  .tray .understood { font-size: 15px; font-weight: 500; margin-bottom: 10px; }
+  .intents { display: grid; gap: 6px; margin-bottom: 12px; }
+  .intent { display: grid; grid-template-columns: 1fr auto; gap: 0 12px; font-size: 13px; }
+  .intent b { font-weight: 500; }
+  .intent .why { grid-column: 1; color: var(--dim); font-size: 12px; }
+  .intent .conf { grid-row: 1 / span 2; grid-column: 2; align-self: center; width: 64px; height: 4px; background: var(--raised); border-radius: 4px; overflow: hidden; }
+  .intent .conf i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { height: 34px; padding: 0 12px; font-size: 13px; border-radius: 999px; }
+  .chip:first-child { background: var(--text); color: #0a0a0c; border-color: transparent; }
+  .chip .n { font: 500 10px "JetBrains Mono", monospace; opacity: .55; }
+  .tray .q { margin-top: 10px; color: var(--dim); font-size: 13px; }
+  .thinking { display: flex; gap: 10px; align-items: center; color: var(--dim); font-size: 14px; }
+  .speccard h4 { margin: 0; font-size: 18px; letter-spacing: -.01em; }
+  .speccard ul { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: #c4c4cc; columns: 2; column-gap: 28px; }
+
+  /* ---- pipeline ---- */
+  .bottom { display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+  .pipe { display: grid; grid-template-columns: repeat(6, 1fr); padding: 14px 16px; border-bottom: 1px solid var(--line); position: relative; }
+  .step { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 1px 8px; font-size: 12px; font-weight: 500; color: var(--faint); min-width: 0; position: relative; padding-right: 10px; }
+  .step::after { content: ""; position: absolute; left: 22px; right: 14px; top: 9px; height: 1px; background: var(--line-strong); z-index: 0; display: none; }
+  .step i { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--line-strong); background: var(--surface); grid-row: 1 / span 2; position: relative; z-index: 1; display: grid; place-items: center; transition: all .3s; }
+  .step span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .step a { grid-column: 2; font: 11px "JetBrains Mono", monospace; color: var(--dim); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 16px; }
+  .step a[href] { color: #a5b0ff; }
+  .step a[href]:hover { text-decoration: underline; }
+  .step.running, .step.done, .step.warn, .step.err { color: var(--text); }
+  .step.running i { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .step.running i::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite; }
+  .step.done i { border-color: var(--ok); background: var(--ok); }
+  .step.done i::after { content: ""; width: 5px; height: 8px; border: solid #0a0a0c; border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+  .step.warn i { border-color: var(--warn); background: var(--warn); }
+  .step.err i { border-color: var(--hot); }
+  .code { position: relative; font: 11.5px/1.55 "JetBrains Mono", monospace; color: #7d7d88; padding: 10px 16px; overflow: hidden; white-space: pre-wrap; word-break: break-all; display: flex; flex-direction: column; justify-content: flex-end; min-height: 0;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%); mask-image: linear-gradient(to bottom, transparent, #000 45%); }
+  .code .cursor { display: inline-block; width: 7px; height: 13px; background: var(--accent); vertical-align: -2px; animation: pulse .7s infinite; }
+  .stats { display: none; }
+
+  /* ---- toasts, modals ---- */
+  .toast { position: fixed; top: 66px; right: 20px; background: var(--raised); border: 1px solid var(--line-strong); color: var(--text); padding: 12px 14px; border-radius: 12px; font-size: 13px; max-width: 380px; z-index: 30; transform: translateY(-8px); opacity: 0; transition: all .35s var(--ease); pointer-events: none; box-shadow: 0 16px 40px rgba(0,0,0,.45); border-left: 3px solid var(--ok); }
+  .toast.show { transform: none; opacity: 1; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(4px); display: none; place-items: center; z-index: 40; padding: 16px; }
+  .modal.show { display: grid; }
+  .sheet { width: min(720px, 100%); max-height: 86vh; overflow: auto; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 16px; padding: 24px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .sheet h3 { margin: 0 0 4px; font-size: 20px; letter-spacing: -.01em; }
+  .sheet .sub { color: var(--dim); font-size: 13px; margin-bottom: 8px; }
+  .sheet label { display: block; font: 500 11px "JetBrains Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 18px 0 8px; }
+  .sheet textarea { width: 100%; min-height: 110px; font: 14px/1.55 Inter, sans-serif; background: var(--inset); color: var(--text); border: 1px solid var(--line-strong); border-radius: var(--r-md); padding: 12px; resize: vertical; outline: none; }
+  .sheet textarea:focus { border-color: rgba(109,124,255,.5); }
+  .facts, .hist, .ideas { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+  .facts li, .hist li { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--inset); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; font-size: 13px; }
+  .facts li button { height: 24px; padding: 0 8px; background: none; border: 0; color: var(--dim); }
+  .hist li span:last-child { color: var(--dim); white-space: nowrap; }
+  .sheet .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+  .muted { color: var(--dim); font-size: 13px; }
+  .scope { font: 500 10px "JetBrains Mono", monospace; color: #a5b0ff; background: var(--accent-soft); border-radius: 4px; padding: 1px 6px; margin-right: 8px; white-space: nowrap; }
+  .ideas { gap: 10px; margin-top: 16px; }
+  .ideas li { background: var(--inset); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; }
+  .ideas .t { display: flex; justify-content: space-between; gap: 10px; font-weight: 600; font-size: 15px; }
+  .ideas .t span:last-child { font: 11px "JetBrains Mono", monospace; color: var(--dim); font-weight: 400; }
+  .ideas .tag { color: var(--dim); font-size: 13px; }
+  .ideas .links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .ideas .links a { font-size: 12px; color: var(--text); background: var(--raised); border: 1px solid var(--line-strong); border-radius: 999px; padding: 4px 10px; text-decoration: none; }
+  .ideas .links a:hover { border-color: rgba(109,124,255,.5); }
+  .ideas .links a[data-export] { background: var(--accent-soft); border-color: rgba(109,124,255,.4); color: #c9cfff; }
+
+  footer { padding: 8px 20px; border-top: 1px solid var(--line); color: var(--faint); font-size: 12px; display: flex; justify-content: space-between; gap: 16px; }
+  footer kbd { margin-right: 3px; }
+  .err { color: var(--hot); }
+  #file { display: none; }
+
+  @media (max-width: 1100px) { main { grid-template-columns: 330px 1fr; } .brand-sub { display: none; } }
+  @media (max-width: 860px) {
+    body { height: auto; min-height: 100vh; overflow: auto; }
+    header { padding: 10px 16px; }
+    .runpill { display: none; }
+    main { grid-template-columns: 1fr; padding: 12px 16px; }
+    .left { overflow: visible; }
+    .right { grid-template-rows: 70vh auto; }
+    .pipe { grid-template-columns: repeat(3, 1fr); row-gap: 12px; }
+    .code { height: 90px; }
+    footer span:first-child { display: none; }
+  }
+
+  /* =================== v3 layout: sidebar · command + stage · inspector =================== */
+  body { display: block; }
+  .app { display: grid; grid-template-columns: 236px minmax(0, 1fr) 320px; height: 100vh; }
+
+  /* sidebar */
+  .side { display: flex; flex-direction: column; gap: 18px; padding: 16px 12px; border-right: 1px solid var(--line); background: rgba(12,12,15,.6); min-height: 0; }
+  .side .brand { padding: 2px 6px 6px; gap: 10px; }
+  .side .brand-sub { border: 0; padding: 0; font-size: 12px; }
+  .nav { display: grid; gap: 2px; }
+  .navgroup { display: grid; gap: 2px; }
+  .navi { justify-content: flex-start; height: 34px; padding: 0 10px; border: 0; background: transparent; color: var(--dim); font-weight: 500; border-radius: 8px; gap: 10px; }
+  .navi:hover { background: var(--raised); color: var(--text); }
+  .navi.on { background: var(--raised); color: var(--text); box-shadow: inset 2px 0 0 var(--accent); }
+  .navi .memcount, .navi kbd { margin-left: auto; }
+  .nav-h { padding: 14px 10px 4px; }
+  .nav-hb { height: auto; padding: 0; border: 0; background: none; font: 500 11px "JetBrains Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); gap: 8px; }
+  .nav-hb:hover { background: none; color: var(--dim); }
+  .side-foot { margin-top: auto; display: grid; gap: 10px; }
+  .memcard { height: auto; justify-content: flex-start; text-align: left; padding: 10px 12px; gap: 10px; background: var(--surface); border-color: var(--line); white-space: normal; }
+  .memcard span:nth-child(2) { display: grid; line-height: 1.3; flex: 1; }
+  .memcard small { color: var(--dim); font-size: 11px; font-weight: 400; }
+  .runline { display: flex; align-items: center; gap: 8px; font: 500 11px "JetBrains Mono", monospace; color: var(--dim); padding: 0 6px; min-width: 0; }
+  .runline #statusText { flex: 1; min-width: 0; max-width: none; }
+  .runline #timer { border: 0; padding: 0; min-width: 0; color: var(--text); }
+
+  /* center */
+  .center { grid-template-columns: minmax(0, 1fr) !important; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px; padding: 16px 20px 10px; min-height: 0; min-width: 0; }
+  .command { display: grid; gap: 10px; }
+  .command .kinds { justify-self: start; grid-template-columns: repeat(5, auto); }
+  .command .kinds button { padding: 0 12px; }
+  .ideabox { padding: 6px 6px 6px 14px; align-items: center; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+  .ideabox .lead { color: var(--accent); }
+  .ideabox input { font-size: 16px; padding: 12px 6px; }
+  .ideabox .modes { display: flex; gap: 2px; grid-template-columns: none; }
+  .iconbtn { width: 38px; height: 38px !important; padding: 0 !important; background: transparent; border: 0; color: var(--dim); border-radius: 10px; }
+  .iconbtn:hover { background: var(--raised); color: var(--text); }
+  .iconbtn svg { width: 18px; height: 18px; }
+  .ideabox .primary { height: 40px; padding: 0 14px; margin-left: 4px; }
+  .ideabox .primary kbd { color: #555; border-color: #ccc; }
+  .view { min-height: 0; display: grid; }
+  .view[hidden] { display: none; }
+  .stage { min-height: 0; }
+  .examples { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 22px; }
+  .ex { height: 34px; font-size: 13px; border-radius: 999px; background: var(--raised); color: var(--dim); }
+  .ex:hover { color: var(--text); border-color: rgba(109,124,255,.45); }
+  .msgline { display: flex; justify-content: space-between; gap: 16px; font-size: 12px; color: var(--faint); min-height: 18px; }
+  .msgline .keys kbd { margin: 0 2px 0 8px; }
+
+  /* floating camera */
+  .campop { position: absolute; left: 14px; top: 14px; width: 300px; aspect-ratio: 4 / 3; z-index: 6; display: none; border-color: var(--line-strong); box-shadow: 0 20px 50px rgba(0,0,0,.55); overflow: hidden; }
+  .campop.on, .campop.shot { display: grid; }
+  /* Live view fills the stage so you (and the room) can frame the sketch; after Snap it shrinks to a corner thumbnail. */
+  .campop.on:not(.shot):not(.mini) { left: 0; top: 0; right: 0; bottom: 0; width: auto; aspect-ratio: auto; border-radius: 0; border: 0; z-index: 7; }
+  .campop.on:not(.shot):not(.mini) .count { font-size: 180px; }
+  .campop.on video { transform: none; }
+  .campop.on:not(.shot):not(.mini) video { object-fit: contain; background: #000; } /* unmirrored: handwriting reads correctly */
+  .campop.on:not(.shot):not(.mini)::after { content: "Hold your sketch up and press Space"; position: absolute; left: 50%; bottom: 56px; transform: translateX(-50%); font-size: 14px; color: #fff; background: rgba(0,0,0,.6); backdrop-filter: blur(6px); padding: 8px 14px; border-radius: 999px; pointer-events: none; }
+  .campop { transition: all .35s var(--ease); }
+  .campop .camhint { position: absolute; left: 8px; right: 8px; bottom: 8px; width: auto; background: rgba(0,0,0,.6); backdrop-filter: blur(6px); border-color: rgba(255,255,255,.12); font-size: 12px; padding: 7px 9px; }
+  .campop .count { font-size: 90px; }
+
+  /* inbox view */
+  .inbox { grid-template-rows: auto minmax(0, 1fr); gap: 14px; }
+  .inbox-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; }
+  .inbox-head h3 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
+  .inbox-head .sub { color: var(--dim); font-size: 13px; }
+  .inbox .ideas { margin: 0; overflow: auto; align-content: start; padding-right: 4px; }
+
+  /* inspector */
+  .inspector { border-left: 1px solid var(--line); background: rgba(12,12,15,.6); display: flex; flex-direction: column; min-height: 0; overflow: auto; }
+  .insp-sec { padding: 16px; border-bottom: 1px solid var(--line); display: grid; gap: 12px; }
+  .insp-sec.grow { flex: 1; min-height: 140px; border-bottom: 0; grid-template-rows: auto minmax(0, 1fr); }
+  .cur-title { font-size: 16px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: -4px; }
+  .inspector .pipe { grid-template-columns: 1fr; padding: 0; border: 0; gap: 0; }
+  .inspector .step { padding: 0 0 14px; }
+  .inspector .step::after { display: block; left: 8.5px; right: auto; top: 20px; bottom: 0; width: 1px; height: auto; }
+  .inspector .step:last-child::after { display: none; }
+  .inspector .step.done::after { background: rgba(52,211,153,.5); }
+  .inspector .step span { font-size: 13px; }
+  .inspector .jobs { grid-template-columns: 1fr 1fr; }
+  .inspector .jobs button { height: 38px; justify-content: flex-start; padding: 0 10px; font-size: 12.5px; }
+  .inspector .code { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 35%); mask-image: linear-gradient(to bottom, transparent, #000 35%); padding: 0; font-size: 10.5px; }
+  .ship { height: 46px; }
+
+  @media (max-width: 1200px) { .app { grid-template-columns: 210px minmax(0, 1fr) 280px; } .msgline .keys { display: none; } }
+  @media (max-width: 960px) {
+    body { overflow: auto; }
+    .app { grid-template-columns: 1fr; height: auto; }
+    .side { flex-direction: row; flex-wrap: wrap; align-items: center; border-right: 0; border-bottom: 1px solid var(--line); padding: 10px 16px; gap: 10px; }
+    .nav { grid-auto-flow: column; overflow-x: auto; }
+    .navgroup { grid-auto-flow: column; }
+    .nav-h, .side-foot .runline { display: none; }
+    .side-foot { margin: 0 0 0 auto; }
+    .memcard small { display: none; }
+    .center { padding: 12px 16px; }
+    .view { min-height: 70vh; }
+    .inspector { border-left: 0; border-top: 1px solid var(--line); }
+    .command .kinds { justify-self: stretch; grid-template-columns: repeat(5, 1fr); }
+    .campop { width: 200px; }
+  }
+
+  /* live vision suggestion layer */
+  .see { position: absolute; left: 50%; bottom: 52px; transform: translate(-50%, 8px); width: min(560px, calc(100% - 24px)); background: rgba(12,12,16,.88); backdrop-filter: blur(12px); border: 1px solid var(--line-strong); border-radius: 14px; padding: 10px 12px; display: none; gap: 8px; z-index: 3; opacity: 0; transition: all .3s var(--ease); }
+  .see.show { display: grid; opacity: 1; transform: translate(-50%, 0); }
+  .campop.on.mini .see, .campop.shot .see { display: none; }
+  .see .what { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #fff; }
+  .see .what small { font: 500 10px "JetBrains Mono", monospace; letter-spacing: .06em; text-transform: uppercase; color: #a5b0ff; background: var(--accent-soft); padding: 2px 6px; border-radius: 4px; }
+  .see .what .act { margin-left: auto; font: 500 11px "JetBrains Mono", monospace; color: var(--dim); }
+  .see .chips .chip { height: 30px; font-size: 12px; }
+  .campop.on:not(.shot):not(.mini).has-see::after { display: none; }
+
+  /* new chat + history */
+  .newchat { height: 38px; justify-content: flex-start; gap: 10px; padding: 0 12px; background: var(--surface); border-color: var(--line-strong); font-weight: 600; }
+  .newchat:hover { border-color: rgba(109,124,255,.5); background: var(--accent-soft); }
+  .newchat kbd { margin-left: auto; }
+  .side .nav { flex: 1; min-height: 0; overflow: auto; align-content: start; }
+  .histlist { display: grid; gap: 1px; }
+  .hitem { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 6px; height: auto; padding: 7px 10px; border: 0; background: transparent; border-radius: 8px; text-align: left; justify-content: stretch; white-space: normal; }
+  .hitem:hover { background: var(--raised); }
+  .hitem.on { background: var(--raised); box-shadow: inset 2px 0 0 var(--accent); }
+  .hitem .ht { font-size: 13px; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hitem .hm { grid-column: 1; font: 10.5px "JetBrains Mono", monospace; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hitem .hx { grid-row: 1 / span 2; grid-column: 2; opacity: 0; color: var(--faint); font-size: 15px; padding: 0 4px; }
+  .hitem:hover .hx { opacity: 1; }
+  .hitem .hx:hover { color: var(--hot); }
+  .histempty { font-size: 12px; color: var(--faint); padding: 4px 10px; }
+
+  .preflight { height: auto; padding: 8px 10px; display: flex; justify-content: space-between; gap: 6px; background: var(--surface); border-color: var(--line); font: 500 11px "JetBrains Mono", monospace; color: var(--dim); }
+  .pf { display: inline-flex; align-items: center; gap: 5px; }
+  .pf i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+  .pf.ok i { background: var(--ok); box-shadow: 0 0 0 3px rgba(52,211,153,.15); }
+  .pf.warn i { background: var(--warn); }
+  .pf.bad i { background: var(--hot); box-shadow: 0 0 0 3px rgba(248,113,113,.2); }
+  .pf.bad { color: var(--hot); }
+
+  .campop.frozen img { display: block; object-fit: contain; background: #000; }
+  .campop.frozen video { visibility: hidden; }
+  .campop.frozen::after { display: none !important; }
+  .see .seeask { width: 100%; font-size: 13px; padding: 9px 11px; background: rgba(0,0,0,.45); border-color: rgba(255,255,255,.14); }
+  .see .seeask:focus { border-color: rgba(109,124,255,.7); }
+
+  .tray .trayask { width: 100%; margin-top: 12px; font-size: 13px; padding: 10px 12px; }
+  .tray .trayask:focus { border-color: rgba(109,124,255,.7); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .see { max-height: calc(100% - 70px); overflow: auto; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1 1-1.5 4-1.5 4s3-.5 4-1.5M9 15l-3-3c1.5-4 5-8 12-8 0 7-4 10.5-8 12z"/><circle cx="14.5" cy="9.5" r="1.5"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13l2-8h12l2 8v6H4zM4 13h5l1 2h4l1-2h5"/></symbol>
+  <symbol id="i-brain" viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+</svg>
+
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"/></svg></div>
+      <div><div class="brand-name">Idea → Product</div><div class="brand-sub">Grok + <b id="builderName">Cursor</b></div></div>
+    </div>
+
+    <button class="newchat" id="newChatBtn"><svg class="i"><use href="#i-spark"/></svg>New chat<kbd>N</kbd></button>
+    <nav class="nav">
+      <button class="navi on" id="navStudio"><svg class="i"><use href="#i-spark"/></svg>Studio</button>
+      <div class="nav-h"><button class="nav-hb" id="ideasBtn">Inbox <span class="memcount" id="ideasCount">0</span></button></div>
+      <div id="tabs" class="navgroup">
+        <button class="navi" data-tab="projects"><svg class="i"><use href="#i-folder"/></svg>Projects<span class="memcount" id="nProjects">0</span></button>
+        <button class="navi" data-tab="tasks"><svg class="i"><use href="#i-check"/></svg>Tasks<span class="memcount" id="nTasks">0</span></button>
+        <button class="navi" data-tab="notes"><svg class="i"><use href="#i-note"/></svg>Notes<span class="memcount" id="nNotes">0</span></button>
+        <button class="navi" data-tab="reminders"><svg class="i"><use href="#i-bell"/></svg>Reminders<span class="memcount" id="nRem">0</span></button>
+      </div>
+      <div class="nav-h"><span class="nav-hb">History</span></div>
+      <div class="histlist" id="histList"></div>
+    </nav>
+
+    <div class="side-foot">
+      <button class="memcard" id="memBtn">
+        <svg class="i"><use href="#i-brain"/></svg>
+        <span><b>Memory</b><small>Preferences across projects &amp; files</small></span>
+        <span class="memcount" id="memCount">0</span>
+      </button>
+      <button class="preflight" id="preflight" title="Click to re-check"><span class="pf" id="pfGrok"><i></i>Grok</span><span class="pf" id="pfGh"><i></i>GitHub</span><span class="pf" id="pfCursor"><i></i>Cursor</span></button>
+      <div class="runline" id="model"><span class="dot" id="dot"></span><span id="statusText">ready</span><span id="timer">0.0s</span></div>
+    </div>
+  </aside>
+
+  <!-- ============ CENTER ============ -->
+  <main class="center">
+    <div class="command">
+      <div class="kinds" id="kinds" role="tablist" aria-label="Capture as">
+        <button data-kind="auto" class="on" title="Grok decides what it is">✦ Auto</button>
+        <button data-kind="idea">Idea</button>
+        <button data-kind="note">Note</button>
+        <button data-kind="task">Task</button>
+        <button data-kind="project">Project</button>
+      </div>
+      <div class="ideabox">
+        <svg class="i lead"><use href="#i-spark"/></svg>
+        <input type="text" id="edit" placeholder="Say anything: an idea, a note, a task, a change…" autocomplete="off" />
+        <div class="modes">
+          <button id="voiceBtn" class="iconbtn" title="Speak (V)"><svg class="i"><use href="#i-mic"/></svg></button>
+          <button id="snapBtn" class="iconbtn" title="Snap a sketch (Space)"><svg class="i"><use href="#i-cam"/></svg></button>
+          <button id="uploadBtn" class="iconbtn" title="Upload an image"><svg class="i"><use href="#i-up"/></svg></button>
+        </div>
+        <button class="primary" id="editBtn" title="Enter">Go <kbd>↵</kbd></button>
+      </div>
+      <input type="file" id="file" accept="image/*" />
+    </div>
+
+    <section class="view" id="studioView">
+      <div class="card stage">
+        <div class="chrome">
+          <div class="lights"><i></i><i></i><i></i></div>
+          <div class="addr" id="addr">prototype · not started</div>
+          <div class="chrome-r" id="stats">0 chars</div>
+        </div>
+        <div class="viewport">
+          <iframe id="app" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"></iframe>
+          <div class="empty" id="empty">
+            <div class="hero">
+              <span class="eyebrow"><span class="dot ok"></span>Your always-on product team</span>
+              <h2>Have a thought?<br/><span>Ship it before it fades.</span></h2>
+              <p>Say it, type it, or hold up a sketch. Grok reads your intent with your memory and builds a clickable prototype in seconds, then opens a repo where an agent builds the MVP while you get on with your day.</p>
+              <div class="examples">
+                <button class="ex" data-ex="An app for my running club to log weekly miles and see a leaderboard">🏃 Running club leaderboard</button>
+                <button class="ex" data-ex="Remind me to follow up with the judges by end of the week">🔔 Follow up with judges Friday</button>
+                <button class="ex" data-ex="A tool that turns meeting notes into action items with owners">📝 Meeting notes → action items</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card cam campop" id="cam">
+            <video id="video" autoplay playsinline muted></video>
+            <img id="shot" alt="captured sketch" />
+            <div class="cam-label" id="camLabel">camera off</div>
+            <button class="retake" id="retakeBtn" title="Toggle live camera"><svg class="i"><use href="#i-redo"/></svg>Live</button>
+            <div class="count" id="count"></div>
+            <div class="flash" id="flash"></div>
+            <div class="see" id="see"></div>
+            <input type="text" class="plain camhint" id="hint" placeholder="Context, e.g. “for my running club”" />
+          </div>
+
+          <div class="done-badge" id="badge"></div>
+          <div class="tray" id="tray"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view inbox" id="ideasModal" hidden>
+      <div class="inbox-head">
+        <div><h3 id="inboxTitle">Projects</h3><div class="sub" id="inboxSub">Agents keep building in the background. Check back whenever you're free.</div></div>
+        <div class="row" style="flex:none"><button class="ghost" id="ideasRefresh"><svg class="i"><use href="#i-redo"/></svg>Refresh</button><button class="ghost" id="ideasClose">Back to Studio</button></div>
+      </div>
+      <ul class="ideas" id="ideasList"></ul>
+    </section>
+
+    <div class="msgline"><span id="msg"></span><span class="keys"><kbd>↵</kbd> capture <kbd>V</kbd> speak <kbd>␣</kbd> snap <kbd>1-3</kbd> pick <kbd>S</kbd> ship <kbd>I</kbd> inbox <kbd>M</kbd> memory</span></div>
+  </main>
+
+  <!-- ============ INSPECTOR ============ -->
+  <aside class="inspector">
+    <div class="insp-sec">
+      <div class="label"><span>Current idea</span></div>
+      <div class="cur-title" id="curTitle">Nothing yet</div>
+      <div class="pipe" id="pipe">
+        <div class="step" data-s="idea"><i></i><span>Captured</span><a></a></div>
+        <div class="step" data-s="proto"><i></i><span>Prototype</span><a></a></div>
+        <div class="step" data-s="spec"><i></i><span>Spec</span><a></a></div>
+        <div class="step" data-s="repo"><i></i><span>Repo + your rules</span><a></a></div>
+        <div class="step" data-s="build"><i></i><span>Agent builds MVP</span><a></a></div>
+        <div class="step" data-s="pr"><i></i><span>Pull request</span><a></a></div>
+      </div>
+      <button class="ship" id="shipBtn" disabled><svg class="i"><use href="#i-rocket"/></svg>Ship to <span id="builderName2">Cursor</span><kbd>S</kbd></button>
+      <div class="hint"><svg class="i" style="width:12px;height:12px;vertical-align:-2px"><use href="#i-lock"/></svg> Private repo · your memory ships as <code>.cursor/rules</code></div>
+    </div>
+
+    <div class="insp-sec">
+      <div class="label"><span>Background jobs</span><span class="step-n">notify when done</span></div>
+      <div class="jobs">
+        <button data-job="research" title="Web research: market, competitors, users, risks"><svg class="i"><use href="#i-search"/></svg>Deep research</button>
+        <button data-job="docs" title="PRD, architecture, user guide"><svg class="i"><use href="#i-doc"/></svg>Docs</button>
+        <button data-job="pitch" title="Pitch + 4-week launch plan"><svg class="i"><use href="#i-target"/></svg>Pitch &amp; launch</button>
+        <button id="remindBtn" title="Get back to me Friday 5pm with a status update"><svg class="i"><use href="#i-bell"/></svg>Remind Fri 5pm</button>
+      </div>
+    </div>
+
+    <div class="insp-sec">
+      <div class="label"><span>Take it further</span></div>
+      <div class="row">
+        <button class="ghost" id="openBtn" disabled><svg class="i"><use href="#i-ext"/></svg>Preview</button>
+        <button class="ghost" id="exportBtn" disabled><svg class="i"><use href="#i-code"/></svg>Open in Cursor</button>
+      </div>
+    </div>
+
+    <div class="insp-sec grow">
+      <div class="label"><span>Live output</span></div>
+      <div class="code" id="code"><div id="codeText"></div></div>
+    </div>
+  </aside>
+</div>
+
+
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="memModal">
+  <div class="sheet">
+    <h3>🧠 What Grok knows about you</h3>
+    <div class="sub">Used to guess what you mean, suggest next steps, and personalize every build. Stored locally in memory.json.</div>
+    <label>About me — who I am, what I work on</label>
+    <textarea id="profile" placeholder="e.g. Your name, your role, what you're building right now, side projects, tools you use, design taste…"></textarea>
+    <label>Learned automatically</label>
+    <ul class="facts" id="facts"></ul>
+    <label>Recent builds &amp; edits</label>
+    <ul class="hist" id="hist"></ul>
+    <div class="actions">
+      <button id="clearHist">Clear history</button>
+      <button id="memClose">Close</button>
+      <button class="primary" id="memSave" style="font-size:15px;padding:12px 18px">Save</button>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+const $ = (id) => document.getElementById(id);
+const video = $("video"), cam = $("cam"), shot = $("shot"), iframe = $("app");
+let currentHtml = "", busy = false, timerInt = null, t0 = 0;
+
+// ---- status / timer ----
+function status(text, mode) {
+  $("statusText").textContent = text;
+  $("dot").className = "dot" + (mode ? " " + mode : "");
+}
+function startTimer() {
+  t0 = performance.now();
+  clearInterval(timerInt);
+  timerInt = setInterval(() => ($("timer").textContent = ((performance.now() - t0) / 1000).toFixed(1) + "s"), 100);
+}
+function stopTimer() { clearInterval(timerInt); return ((performance.now() - t0) / 1000).toFixed(1); }
+function msg(text, isErr) { $("msg").textContent = text; $("msg").className = isErr ? "err" : ""; }
+
+fetch("/api/health").then(r => r.json()).then(h => {
+  status(h.hasKey ? `${h.model} · ready` : "no API key — add XAI_API_KEY to .env", h.hasKey ? "ok" : "");
+});
+
+// ---- camera ----
+// Camera stays OFF until the user clicks Live (or Snap).
+async function startCam() {
+  if (video.srcObject) return true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+    video.srcObject = stream; cam.classList.add("on");
+    if (video.readyState < 1) await Promise.race([new Promise(r => video.onloadedmetadata = r), new Promise(r => setTimeout(r, 3000))]);
+    video.play().catch(() => {}); // don't rely on autoplay (and never block on it)
+    return true;
+  } catch (e) { msg("Camera unavailable. Use Upload image instead.", true); return false; }
+}
+function stopCam() {
+  video.srcObject?.getTracks().forEach(t => t.stop()); video.srcObject = null; cam.classList.remove("on", "shot", "mini");
+  $("camLabel").textContent = "camera off"; $("retakeBtn").lastChild.textContent = "Live";
+}
+async function liveCam() {
+  if (unfreeze()) return;
+  if (cam.classList.contains("mini")) { cam.classList.remove("mini"); $("camLabel").textContent = "live camera"; return; }
+  if (video.srcObject && !cam.classList.contains("shot")) return stopCam(); // toggle off
+  cam.classList.remove("shot");
+  $("camLabel").textContent = "starting…";
+  if (await startCam()) { $("camLabel").textContent = "live camera"; $("retakeBtn").lastChild.textContent = "Off"; }
+  else $("camLabel").textContent = "camera off";
+}
+
+function captureFrame() {
+  const w = video.videoWidth, h = video.videoHeight;
+  if (!w) return null;
+  const scale = Math.min(1, 1600 / w);
+  const c = document.createElement("canvas");
+  c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+  c.getContext("2d").drawImage(video, 0, 0, c.width, c.height); // unmirrored so handwriting reads correctly
+  return c.toDataURL("image/jpeg", 0.88);
+}
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+async function countdown() {
+  for (const n of ["3", "2", "1"]) { $("count").textContent = n; await sleep(550); }
+  $("count").textContent = "";
+  $("flash").classList.remove("go"); void $("flash").offsetWidth; $("flash").classList.add("go");
+}
+
+async function snapAndBuild() {
+  if (busy) return;
+  // First press only turns the live view on. Nothing is captured until the user presses again.
+  if (!video.srcObject || cam.classList.contains("shot") || cam.classList.contains("mini")) {
+    await liveCam();
+    if (video.srcObject) toast("📷 Live. Point at anything; the agent will suggest. Press Space (or 📷 again) to act.");
+    return;
+  }
+  await countdown();
+  const img = captureFrame();
+  if (!img) return msg("No camera frame yet.", true);
+  freeze(img);
+  status("agent is looking…", "live");
+  showAgent({ summary: "Looking…", actions: [] }, img, null);
+  let res = null;
+  try { res = await see(img, "high", "watch"); } catch (e) { msg("Vision agent failed: " + (e.message || e), true); }
+  status("ready", "ok");
+  if (cam.classList.contains("frozen")) showAgent(res || { summary: "What should I do with this?", actions: [] }, img, (res?.actions || []).find(a => a.tool === "ask_user")?.args?.question);
+}
+// Frozen frame: options stay on screen until you pick one, type your own, or go back to live.
+let frozenImg = null;
+function freeze(img) { frozenImg = img; shot.src = img; cam.classList.add("frozen"); $("camLabel").textContent = "frozen · pick an option or type"; }
+function unfreeze() { if (!cam.classList.contains("frozen")) return false; frozenImg = null; cam.classList.remove("frozen"); hideSee(); if (video.srcObject) $("camLabel").textContent = "live camera"; else cam.classList.remove("on"); return true; }
+async function askAgent(text) {
+  const im = frozenImg || captureFrame(); if (!im || !text) return;
+  $("see").querySelector(".seeask")?.setAttribute("disabled", "");
+  status(`doing: “${text.slice(0, 40)}”…`, "live");
+  let res = null;
+  try { res = await see(im, "high", "act", text); } catch (e) { msg("Vision agent failed: " + (e.message || e), true); }
+  status("ready", "ok");
+  unfreeze();
+  const acts = res?.actions || [];
+  const didSomething = acts.some(a => ["build_from_sketch", "build_prototype"].includes(a.tool) || a.result?.ok);
+  if (res && didSomething) return runAgent(res, im);
+  // Safety net: the user's own words win. Build from the photo with exactly what they typed.
+  buildFromPhoto(im, text);
+}
+
+// ---- live vision agent: Grok decides which tools to call; this code just carries them out ----
+let seeing = false, lastSig = null;
+async function see(img, detail = "low", mode = "watch") {
+  const r = await fetch("/api/see", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: img, detail, mode }) });
+  const j = await r.json(); if (!r.ok) throw new Error(j.error); return j;
+}
+function hideSee() { $("see").classList.remove("show"); cam.classList.remove("has-see"); }
+// Turn one agent action into a runnable UI step.
+function stepFor(a, img) {
+  const t = a.tool, g = a.args || {};
+  if (t === "build_from_sketch") return [{ label: "🛠 " + (g.label || "Build this sketch"), run: () => { const im = img || captureFrame(); hideSee(); showShot(im); build(im); } }];
+  if (t === "build_prototype") return [{ label: "💡 " + (g.label || "Build it"), run: () => { hideSee(); img ? buildFromPhoto(img, g.instruction) : applyEdit(g.instruction); } }];
+  if (t === "suggest_ideas") return (g.ideas || []).slice(0, 3).map(i => ({ label: "💡 " + i.label, run: () => { hideSee(); img ? buildFromPhoto(img, i.instruction) : applyEdit(i.instruction); } }));
+  if (["save_task", "save_note", "set_reminder", "update_project", "start_job"].includes(t))
+    return [{ label: ({ save_task: "✅ ", save_note: "📝 ", set_reminder: "🔔 ", update_project: "📁 ", start_job: "🔬 " }[t]) + (g.label || t.replace("_", " ")), run: async () => {
+      const r = await fetch("/api/act", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tool: t, args: g }) });
+      const j = await r.json(); toast(r.ok ? j.message : "Failed: " + j.error); if (j.url) window.open(j.url, "_blank"); loadMemory();
+    } }];
+  return [];
+}
+// mode "act": the agent already ran side effects server-side, so run build steps now and show the rest.
+function runAgent(res, img) {
+  const acts = res.actions || [];
+  const question = acts.find(a => a.tool === "ask_user")?.args?.question;
+  if (res.mode === "act") {
+    for (const a of acts) if (a.result) toast(a.result.message);
+    if (acts.some(a => a.result)) loadMemory();
+    const build = acts.find(a => a.tool === "build_from_sketch" || a.tool === "build_prototype");
+    if (build) { stepFor(build, img)[0].run(); return; }
+    const rest = acts.filter(a => !a.result && a.tool !== "ask_user" && a.tool !== "do_nothing");
+    if (rest.length || question) showAgent({ ...res, actions: rest }, img, question);
+    else if (!acts.some(a => a.result)) hideSee();
+    return;
+  }
+  showAgent(res, img, question);
+}
+let steps = [];
+function showAgent(res, img, question) {
+  steps = (res.actions || []).flatMap(a => stepFor(a, img));
+  if (!steps.length && !question && !cam.classList.contains("frozen")) return hideSee();
+  const el = $("see");
+  el.innerHTML = `<div class="what"><small>agent</small>${esc(res.summary || "I see something")}<span class="act">${cam.classList.contains("frozen") ? "frozen · Live to resume" : steps.length ? "tap one, or Space to freeze" : ""}</span></div>
+    ${question ? `<div class="muted" style="font-size:12px;color:#c4c4cc">${esc(question)}</div>` : ""}
+    <div class="chips">${steps.map((c, i) => `<button class="chip" data-i="${i}">${esc(c.label)}</button>`).join("")}</div>
+    <input class="seeask plain" placeholder="Not quite? Tell me what to do with this… (Enter)" />`;
+  el.querySelectorAll(".chip").forEach(b => b.onclick = () => { const st = steps[+b.dataset.i]; unfreeze(); st.run(); });
+  const box = el.querySelector(".seeask");
+  box.onkeydown = (e) => { e.stopPropagation(); if (e.key === "Enter" && box.value.trim()) askAgent(box.value.trim()); if (e.key === "Escape") { box.blur(); unfreeze(); } };
+  if (cam.classList.contains("frozen")) setTimeout(() => box.focus(), 50);
+  el.classList.add("show"); cam.classList.add("has-see");
+}
+// Cheap "did the view change?" signature: 16x12 grayscale.
+function frameSig() {
+  if (!video.videoWidth) return null;
+  const c = document.createElement("canvas"); c.width = 16; c.height = 12;
+  const g = c.getContext("2d"); g.drawImage(video, 0, 0, 16, 12);
+  const d = g.getImageData(0, 0, 16, 12).data, out = [];
+  for (let i = 0; i < d.length; i += 4) out.push((d[i] + d[i + 1] + d[i + 2]) / 3);
+  return out;
+}
+function smallFrame() {
+  const c = document.createElement("canvas"), w = 640, h = Math.round(640 * video.videoHeight / video.videoWidth);
+  c.width = w; c.height = h; c.getContext("2d").drawImage(video, 0, 0, w, h); return c.toDataURL("image/jpeg", 0.8);
+}
+setInterval(async () => {
+  if (seeing || busy || shipping || !video.srcObject || !cam.classList.contains("on") || cam.classList.contains("mini") || cam.classList.contains("shot") || cam.classList.contains("frozen")) return;
+  const sig = frameSig(); if (!sig) return;
+  const diff = lastSig ? sig.reduce((a, v, i) => a + Math.abs(v - lastSig[i]), 0) / sig.length : 999;
+  if (diff < 12) return; // scene hasn't changed
+  // wait for it to hold still for a moment before looking
+  await new Promise(r => setTimeout(r, 700));
+  const sig2 = frameSig(); if (!sig2 || sig2.reduce((a, v, i) => a + Math.abs(v - sig[i]), 0) / sig2.length > 10) return;
+  seeing = true; lastSig = sig2;
+  $("camLabel").textContent = "live · looking…";
+  try { const r = await see(smallFrame(), "low", "watch"); if (!busy && !cam.classList.contains("mini") && !cam.classList.contains("frozen") && !document.activeElement?.classList.contains("seeask")) runAgent(r, null); } catch {}
+  finally { seeing = false; if (cam.classList.contains("on") && !cam.classList.contains("mini")) $("camLabel").textContent = "live camera"; }
+}, 2500);
+
+function showShot(dataUrl) {
+  shot.src = dataUrl;
+  if (video.srcObject) { cam.classList.add("mini"); cam.classList.remove("shot"); $("camLabel").textContent = "live · building from snapshot"; return; }
+  cam.classList.add("shot"); $("camLabel").textContent = "captured sketch";
+}
+
+// ---- streaming into the iframe ----
+function cleanHtml(s) {
+  s = s.replace(/^[\s\S]*?(?=<!doctype|<html)/i, "");
+  const end = s.toLowerCase().lastIndexOf("</html>");
+  return end >= 0 ? s.slice(0, end + 7) : s;
+}
+
+// ---- parallel runs: every build/ship belongs to one chat and keeps going if you switch away ----
+const runs = {};
+function startRun(kind) {
+  const run = { sid: idea.project, kind, fg: true, idea: { ...idea }, steps: Object.fromEntries(pipeSnapshot().map(x => [x.s, x])) };
+  runs[run.sid] = run;
+  fetch("/api/sessions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: run.sid, title: ($("curTitle").textContent !== "Nothing yet" && $("curTitle").textContent) || idea.text?.slice(0, 60) || "Sketch", idea: idea.text || "", steps: pipeSnapshot() }) }).then(loadMemory).catch(() => {});
+  return run;
+}
+function runStep(run, s, cls, text, href) { run.steps[s] = { s, cls, text, href: href || null }; if (run.fg) setStep(s, cls, text, href); }
+function detachRuns() { for (const r of Object.values(runs)) r.fg = false; busy = false; shipping = false; clearInterval(timerInt); }
+async function saveRun(run, extra) {
+  await fetch("/api/sessions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: run.sid, idea: run.idea.text || "", steps: Object.values(run.steps), ...extra }) }).catch(() => {});
+  await loadMemory();
+}
+
+async function stream(url, body, label) {
+  const run = startRun("build");
+  busy = true; setButtons();
+  $("empty").style.display = "none";
+  $("badge").classList.remove("show");
+  hideTray();
+  status(label, "live"); startTimer(); msg("");
+  $("codeText").innerHTML = "";
+
+  let raw = "", written = 0, started = false;
+  const doc = iframe.contentDocument;
+  try {
+    const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error || res.statusText); }
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let lastPaint = 0;
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      raw += dec.decode(value, { stream: true });
+
+      if (!run.fg) continue; // chat switched away: keep downloading in the background, stop drawing
+      // Wait until we see the start of the document, then live-write into the iframe.
+      if (!started) {
+        const i = raw.search(/<!doctype|<html/i);
+        if (i >= 0) { started = true; written = i; doc.open(); }
+      }
+      if (started) {
+        // don't write a trailing ``` fence into the page
+        let upto = raw.length;
+        const fence = raw.indexOf("```", written);
+        if (fence >= 0) upto = fence;
+        if (upto > written) { doc.write(raw.slice(written, upto)); written = upto; }
+      }
+
+      const now = performance.now();
+      if (now - lastPaint > 50) {
+        lastPaint = now;
+        const tail = raw.slice(-900).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+        $("codeText").innerHTML = tail + '<span class="cursor"></span>';
+        $("stats").textContent = raw.length.toLocaleString() + " chars";
+      }
+    }
+    if (!run.fg) {
+      // Finished in the background: save it into its chat and let the user know.
+      const html = cleanHtml(raw), title = (html.match(/<title>([^<]*)<\/title>/i)?.[1] || run.idea.text || "Prototype").trim();
+      const lines = html.split("\n").length;
+      run.steps.proto = { s: "proto", cls: "done", text: `${lines} lines`, href: null };
+      await saveRun(run, { title, html, shipped: false, addr: `prototype · ${title}` });
+      delete runs[run.sid]; renderHistory();
+      toast(`✅ “${title}” finished building in the background. Open it from History.`);
+      if (idea.project === run.sid) restoreSession(run.sid); // user came back to it while it was building
+      return;
+    }
+    if (started) doc.close();
+    currentHtml = cleanHtml(raw);
+    if (!started) { iframe.srcdoc = currentHtml || raw; }
+    const secs = stopTimer();
+    const lines = currentHtml.split("\n").length;
+    $("codeText").textContent = currentHtml.slice(-900);
+    $("stats").textContent = `${raw.length.toLocaleString()} chars · ${lines} lines`;
+    $("badge").textContent = `✨ Built in ${secs}s · ${lines} lines of working code`;
+    $("badge").classList.add("show");
+    setTimeout(() => $("badge").classList.remove("show"), 5000);
+    status("done", "ok");
+    $("openBtn").disabled = false;
+    setStep("proto", "done", `${lines} lines`);
+    $("addr").textContent = `prototype · ${iframe.contentDocument.title || "untitled"}`;
+    setTimeout(saveSession, 0);
+    if (iframe.contentDocument.title) $("curTitle").textContent = iframe.contentDocument.title;
+    loadMemory();
+    if (url === "/api/generate") setTimeout(() => askIntent("", { afterBuild: true }), 600);
+  } catch (e) {
+    if (run.fg) { stopTimer(); status("error"); msg(String(e.message || e), true); }
+    else toast("⚠️ A background build failed: " + (e.message || e));
+  } finally { delete runs[run.sid]; renderHistory(); if (run.fg) { busy = false; setButtons(); } }
+}
+
+function build(image) {
+  newIdea({ image, text: $("hint").value.trim() });
+  stream("/api/generate", { image, hint: $("hint").value.trim() }, "grok is reading your sketch…");
+}
+
+function applyEdit(text) {
+  text = (text ?? $("edit").value).trim();
+  if (!text || busy) return;
+  hideTray();
+  $("edit").value = text;
+  if (!currentHtml || shipped) newIdea({ text: idea.pending || text });
+  const html = (!shipped && currentHtml) || "<!-- no app yet: create a brand-new app prototype from scratch for this idea -->";
+  stream("/api/edit", { html, instruction: text }, `building: “${text}”`);
+}
+
+// ---- intent layer: guess what they mean, offer suggestions ----
+let suggestions = [], intentSeq = 0;
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// Compact description of the rendered app (what's on screen, not raw code).
+function appSummary() {
+  if (!currentHtml) return "";
+  try {
+    const d = iframe.contentDocument;
+    const controls = [...d.querySelectorAll("button, input, select, textarea, a")].slice(0, 30)
+      .map(el => `${el.tagName.toLowerCase()}${el.type ? `[${el.type}]` : ""}: ${(el.innerText || el.placeholder || el.value || el.ariaLabel || "").trim().slice(0, 30)}`);
+    return `Title: ${d.title || "untitled"}\nVisible text: ${d.body.innerText.replace(/\s+/g, " ").slice(0, 900)}\nControls: ${controls.join(" | ")}\nThe app is complete and working.`;
+  } catch { return `App code is ${currentHtml.length} chars, complete and working.`; }
+}
+
+function hideTray() { $("tray").classList.remove("show"); suggestions = []; }
+
+async function askIntent(text, { afterBuild = false } = {}) {
+  text = (text ?? "").trim();
+  if (!afterBuild && !text) return;
+  if (busy) return;
+  const seq = ++intentSeq;
+  $("empty").style.display = "none";
+  $("tray").innerHTML = `<div class="thinking"><span class="dot live"></span>${afterBuild ? "Thinking about what you'll want next…" : `Thinking about what you mean by “${esc(text)}”…`}</div>`;
+  $("tray").classList.add("show");
+  try {
+    const r = await fetch("/api/intent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, app: shipped ? "" : appSummary(), afterBuild, project: idea.project }) });
+    const j = await r.json();
+    if (seq !== intentSeq) return;
+    if (!r.ok) throw new Error(j.error || r.statusText);
+    renderTray(j, text, afterBuild);
+    if (j.learned?.length) { toast("🧠 Remembered: " + j.learned.map(f => f.text).join(" · ")); loadMemory(); }
+  } catch (e) {
+    if (seq !== intentSeq) return;
+    if (afterBuild) return hideTray();
+    msg("Intent check failed — applying directly. " + (e.message || e), true);
+    applyEdit(text);
+  }
+}
+
+function renderTray(j, text, afterBuild) {
+  suggestions = (j.suggestions || []).slice(0, 3);
+  if (!afterBuild && text && !suggestions.length) suggestions = [{ label: "Do exactly that", instruction: text }];
+  const intents = (j.intentions || []).slice(0, 3).map(i => `
+    <div class="intent"><b>${esc(i.label)}</b><span class="conf"><i style="width:${Math.round((+i.confidence || 0.5) * 100)}%"></i></span><span class="why">${esc(i.why)}</span></div>`).join("");
+  const chips = suggestions.map((s, k) => `<button class="chip" data-k="${k}" title="${esc(s.instruction)}"><span class="n">${k + 1}</span>${esc(s.label)}</button>`).join("");
+  $("tray").innerHTML = `
+    <div class="top"><span class="kicker">${afterBuild ? "What next? · based on what I know about you" : "What I think you mean"}</span><button class="x" id="trayX">×</button></div>
+    ${j.understood ? `<div class="understood">${esc(j.understood)}</div>` : ""}
+    ${intents ? `<div class="intents">${intents}</div>` : ""}
+    <div class="chips">${chips}</div>
+    ${j.question ? `<div class="q">${esc(j.question)}</div>` : ""}
+    <input class="trayask plain" id="trayAsk" placeholder="None of these? Type exactly what you want and press Enter…" />`;
+  $("tray").classList.add("show");
+  $("trayX").onclick = hideTray;
+  $("tray").querySelectorAll(".chip").forEach(b => b.onclick = () => pick(+b.dataset.k));
+  // Your own words win: apply them literally (a new prototype if nothing is built yet, otherwise a change).
+  const ask = $("trayAsk");
+  ask.onkeydown = (e) => { e.stopPropagation(); if (e.key === "Escape") hideTray(); if (e.key === "Enter" && ask.value.trim()) { const t = ask.value.trim(); hideTray(); applyEdit(t); } };
+}
+
+function pick(k) { const s = suggestions[k]; if (s) applyEdit(s.instruction); }
+
+// ---- memory panel ----
+let memory = { profile: "", facts: [], history: [] };
+function toast(text) { const t = $("toast"); t.textContent = text; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 4500); }
+async function loadMemory() {
+  try { memory = await (await fetch("/api/memory")).json(); } catch {}
+  $("memCount").textContent = memory.facts.length + (memory.profile.trim() ? 1 : 0);
+  $("ideasCount").textContent = (memory.projects || []).length + (memory.tasks || []).filter(t => !t.done).length + (memory.notes || []).length;
+  $("nProjects").textContent = (memory.projects || []).length; $("nTasks").textContent = (memory.tasks || []).filter(t => !t.done).length; $("nNotes").textContent = (memory.notes || []).length; $("nRem").textContent = (memory.reminders || []).filter(r => !r.done).length;
+  renderMemory();
+  renderHistory();
+}
+function renderMemory() {
+  $("facts").innerHTML = memory.facts.length
+    ? memory.facts.map((f, i) => `<li><span><span class="scope">${esc(f.scope || "global")}</span>${esc(f.text)}</span><button data-i="${i}" title="Forget">×</button></li>`).join("")
+    : `<li class="muted">Nothing yet. Talk to it and it will pick things up.</li>`;
+  $("facts").querySelectorAll("button").forEach(b => b.onclick = async () => {
+    memory.facts.splice(+b.dataset.i, 1);
+    await saveMemory({ facts: memory.facts });
+  });
+  $("hist").innerHTML = memory.history.length
+    ? memory.history.slice().reverse().slice(0, 10).map(h => `<li><span>${h.kind === "build" ? "📸" : "✏️"} ${esc(h.title || "untitled")}${h.instruction ? ` — “${esc(h.instruction)}”` : ""}</span><span>${new Date(h.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span></li>`).join("")
+    : `<li class="muted">No builds yet.</li>`;
+}
+async function saveMemory(patch) {
+  const r = await fetch("/api/memory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(patch) });
+  memory = await r.json(); $("memCount").textContent = memory.facts.length + (memory.profile.trim() ? 1 : 0); renderMemory();
+}
+function openMemory() { $("profile").value = memory.profile; renderMemory(); $("memModal").classList.add("show"); }
+function closeMemory() { $("memModal").classList.remove("show"); }
+$("memBtn").onclick = openMemory;
+$("memClose").onclick = closeMemory;
+$("memSave").onclick = async () => { await saveMemory({ profile: $("profile").value }); closeMemory(); toast("🧠 Saved. I'll use this from now on."); };
+$("clearHist").onclick = () => saveMemory({ clearHistory: true });
+$("memModal").onclick = (e) => { if (e.target.id === "memModal") closeMemory(); };
+loadMemory();
+
+// ---- Idea → Product pipeline ----
+let idea = { text: "", image: null, project: "draft-" + Date.now() }, shipped = false, shipping = false, builder = "Cursor";
+fetch("/api/health").then(r => r.json()).then(h => { builder = h.builder; $("builderName").textContent = builder; $("builderName2").textContent = builder; });
+
+function setStep(s, state, text, href) {
+  const el = document.querySelector(`.step[data-s="${s}"]`);
+  if (!el) return;
+  el.className = "step" + (state ? " " + state : "");
+  const a = el.querySelector("a");
+  a.textContent = text || ""; a.title = text || "";
+  if (href) { a.href = href; a.target = "_blank"; a.rel = "noopener"; } else a.removeAttribute("href");
+}
+function resetPipe() { for (const s of ["idea", "proto", "spec", "repo", "build", "pr"]) setStep(s, ""); }
+
+function newIdea({ text = "", image = null }) {
+  idea = { text, image, project: "draft-" + Date.now() };
+  shipped = false; resetPipe();
+  setStep("idea", "done", text ? `“${text.slice(0, 40)}”` : "sketch");
+  $("curTitle").textContent = text || "Sketch";
+  setStep("proto", "running", "building…");
+}
+
+async function shipIt() {
+  if (!currentHtml || busy || shipping || shipped) return;
+  const run = startRun("ship"); run.html = currentHtml;
+  shipping = true; setButtons(); hideTray(); startTimer();
+  status(`shipping “${(idea.text || "sketch").slice(0, 30)}”…`, "live");
+  try {
+    const res = await fetch("/api/ship", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ idea: idea.text, image: idea.image, html: currentHtml, appSummary: appSummary(), project: idea.project, isPrivate: true }) });
+    const reader = res.body.getReader(), dec = new TextDecoder(); let buf = "";
+    while (true) {
+      const { value, done } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i; while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); if (line.trim()) onShipEvent(JSON.parse(line), run); }
+    }
+  } catch (e) { if (run.fg) { msg(String(e.message || e), true); status("error"); } else toast("⚠️ A background ship failed: " + (e.message || e)); }
+  finally { delete runs[run.sid]; renderHistory(); if (run.fg) { shipping = false; stopTimer(); setButtons(); } }
+}
+
+function onShipEvent(e, run) {
+  const fg = run.fg;
+  if (e.step === "spec") {
+    if (e.status === "running") runStep(run, "spec", "running", "Grok writing SPEC.md…");
+    else {
+      runStep(run, "spec", "done", e.title); run.title = e.title;
+      if (fg) $("curTitle").textContent = e.title;
+      if (fg) $("tray").innerHTML = `<div class="top"><span class="kicker">SPEC.md · written by Grok from your idea + memory</span><button class="x" onclick="hideTray()">×</button></div>
+        <div class="speccard"><h4>${esc(e.title)}</h4><div class="muted">${esc(e.tagline)}</div><ul>${(e.features || []).map(f => `<li>${esc(f)}</li>`).join("")}</ul></div>`;
+      if (fg) $("tray").classList.add("show");
+    }
+  }
+  if (e.step === "repo") {
+    if (e.status === "running") runStep(run, "repo", "running", "creating repo…");
+    else { runStep(run, "repo", "done", e.name, e.url); run.repo = e; if (fg) { idea.repo = e; $("addr").textContent = `github.com/${e.name}`; } toast(`📦 ${e.name} created (${e.private ? "private" : "public"}) with SPEC.md, the prototype, and ${e.rules?.length || 0} Cursor rules from your memory`); }
+  }
+  if (e.step === "build") {
+    if (e.status === "running") runStep(run, "build", "running", `${e.by} building…`);
+    if (e.status === "fallback") { runStep(run, "build", "warn", "Cursor unavailable, Grok building"); if (fg) msg("Cursor couldn't access the repo, so Grok is building instead. " + (e.reason || ""), true); }
+    if (e.status === "agent") { runStep(run, "build", "running", `Cursor agent ${e.status_text || "running"} ↗`, e.url); pollAgent(e.id); }
+    if (e.status === "done") runStep(run, "build", "done", `${e.by}: ${e.files.length} files`);
+  }
+  if (e.step === "pr") {
+    if (e.status === "running") runStep(run, "pr", "running", "opening PR…");
+    else runStep(run, "pr", "done", `PR #${e.number} ↗`, e.url);
+  }
+  if (e.step === "all") {
+    if (!fg) { saveRun(run, { title: run.title || run.idea.text || "Shipped idea", html: run.html, shipped: true, repo: run.repo?.url, repoName: run.repo?.name, addr: run.repo ? `github.com/${run.repo.name}` : "" }); toast(`🚀 “${run.title || "Your idea"}” shipped in the background: ${e.pr || e.repo}`); if (e.projects) memory.projects = e.projects; return; }
+    shipped = true; status("shipped", "ok"); setTimeout(saveSession, 0);
+    const secs = ((performance.now() - t0) / 1000).toFixed(0);
+    $("badge").textContent = `🚀 Idea → repo${e.pr ? " → PR" : " → agent building"} in ${secs}s`; $("badge").classList.add("show");
+    if (e.projects) { memory.projects = e.projects; $("ideasCount").textContent = e.projects.length; }
+  }
+  if (e.step === "error") { if (fg) { msg(e.message, true); status("error"); } else toast("⚠️ " + e.message); for (const s of ["spec", "repo", "build", "pr"]) { if (run.steps[s]?.cls === "running") runStep(run, s, "err", "failed"); } }
+}
+
+async function pollAgent(id) {
+  try {
+    const a = await (await fetch(`/api/agent/${id}`)).json();
+    if (a.prUrl) { setStep("build", "done", "Cursor finished"); setStep("pr", "done", "PR ↗", a.prUrl); return; }
+    if (a.status) setStep("build", a.status === "ERROR" ? "err" : "running", `Cursor: ${a.status.toLowerCase()} ↗`, a.url);
+    if (!["FINISHED", "ERROR", "EXPIRED"].includes(a.status)) setTimeout(() => pollAgent(id), 15000);
+  } catch { setTimeout(() => pollAgent(id), 20000); }
+}
+
+// ---- quick capture: Auto / Idea / Note / Task / Project ----
+let captureKind = "auto";
+$("kinds").querySelectorAll("button").forEach(b => b.onclick = () => {
+  captureKind = b.dataset.kind;
+  $("kinds").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  $("edit").placeholder = { auto: "Say anything: an idea, a note, a task, a change…", idea: "Describe an idea to build…", note: "Jot a note…", task: "Add a task, e.g. “send invoice Friday”", project: "Describe a change to one of your projects…" }[captureKind];
+  $("edit").focus();
+});
+
+async function submit(text) {
+  text = String(text || "").trim();
+  if (!text || busy) return;
+  // A photo is showing (upload or frozen camera frame): the instruction is about that photo.
+  if (frozenImg) { $("edit").value = ""; return askAgent(text); }
+  // A prototype is open and the user is in Idea mode → treat as a change to it.
+  if (captureKind === "idea") return askIntent(text);
+  status("triaging…", "live");
+  $("tray").innerHTML = `<div class="thinking"><span class="dot live"></span>Working out what “${esc(text)}” is…</div>`;
+  $("empty").style.display = "none"; $("tray").classList.add("show");
+  let j;
+  try {
+    const r = await fetch("/api/capture", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, kind: captureKind === "auto" ? null : captureKind }) });
+    j = await r.json(); if (!r.ok) throw new Error(j.error);
+  } catch (e) { hideTray(); status("ready", "ok"); return askIntent(text); }
+  status("ready", "ok");
+  if (j.learned?.length) toast("🧠 Remembered: " + j.learned.map(f => f.text).join(" · "));
+  const rem = j.reminder ? ` · 🔔 ${fmtWhen(j.reminder.at)}` : "";
+  if (j.kind === "note") { hideTray(); if (!currentHtml) $("empty").style.display = ""; $("edit").value = ""; toast(`📝 Note saved: ${j.item.title}${rem}`); loadMemory(); return; }
+  if (j.kind === "task") { hideTray(); if (!currentHtml) $("empty").style.display = ""; $("edit").value = ""; toast(`✅ Task added: ${j.item.title}${j.due ? ` · due ${fmtWhen(j.due)}` : ""}${rem}`); loadMemory(); return; }
+  if (j.kind === "project" && j.project) {
+    $("tray").innerHTML = `<div class="top"><span class="kicker">Update to an existing project</span><button class="x" onclick="hideTray()">×</button></div>
+      <div class="understood">Looks like a change to <b>${esc(j.project.title)}</b>: “${esc(j.item.body)}”${rem}</div>
+      <div class="chips"><button class="chip" id="sendUpd"><span class="n">1</span>Send to the ${builder} agent</button><button class="chip" id="asIdea"><span class="n">2</span>No, it's a new idea</button></div>`;
+    suggestions = [];
+    $("sendUpd").onclick = async () => {
+      $("tray").innerHTML = `<div class="thinking"><span class="dot live"></span>Handing it to the agent…</div>`;
+      const r = await fetch("/api/project/update", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug: j.project.slug, instruction: j.item.body }) });
+      const u = await r.json(); hideTray();
+      if (!r.ok) return msg(u.error, true);
+      $("edit").value = "";
+      toast(u.via === "Cursor" ? `🤖 Cursor agent started on ${j.project.title}` : `📌 Logged as issue #${u.number} on ${j.project.title}. Pick it up in Cursor.`);
+      if (u.url) window.open(u.url, "_blank");
+    };
+    $("asIdea").onclick = () => { hideTray(); askIntent(text); };
+    return;
+  }
+  hideTray();
+  askIntent(text); // idea → intent → prototype
+}
+function fmtWhen(iso) { if (/^\d{4}-\d{2}-\d{2}$/.test(iso || "")) { const [y, m, dd] = iso.split("-").map(Number); return new Date(y, m - 1, dd).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }); } const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); }
+
+// ---- background jobs + reminders for the current idea/project ----
+function currentTarget() {
+  const slug = shipped && idea.repo?.name ? idea.repo.name.split("/")[1] : null;
+  return { project: slug, idea: idea.text || (currentHtml ? appSummary() : "") };
+}
+document.querySelectorAll("[data-job]").forEach(b => b.onclick = async () => {
+  const t = currentTarget();
+  if (!t.project && !t.idea) return msg("Capture an idea first.", true);
+  b.classList.add("running"); const label = b.textContent; b.textContent = "⏳ queued";
+  const r = await fetch("/api/jobs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: b.dataset.job, ...t }) });
+  const j = await r.json();
+  setTimeout(() => { b.classList.remove("running"); b.textContent = label; }, 2500);
+  if (!r.ok) return msg(j.error, true);
+  toast(`${label.split(" ")[0]} Running in the background. I'll notify you when it's done${t.project ? " and commit it to the repo" : ""}.`);
+});
+$("remindBtn").onclick = async () => {
+  const t = currentTarget();
+  const title = shipped ? idea.repo?.name?.split("/")[1] : (idea.text || iframe.contentDocument?.title || "your idea");
+  const r = await fetch("/api/reminders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: `Check back on ${title}: what the agent built, open PRs, next decision.`, ref: t.project }) });
+  const j = await r.json(); if (!r.ok) return msg(j.error, true);
+  toast(`🔔 I'll get back to you ${fmtWhen(j.at)} with a status update.`); loadMemory();
+};
+
+// Poll for fired reminders / finished jobs / weekly check-ins (server also sends a macOS notification).
+let firedSince = Date.now();
+setInterval(async () => {
+  try {
+    const list = await (await fetch(`/api/reminders/fired?since=${firedSince}`)).json();
+    for (const f of list) {
+      firedSince = Math.max(firedSince, Date.parse(f.firedAt));
+      toast(`${f.title}: ${f.body}`);
+      if ("Notification" in window && Notification.permission === "granted") new Notification(f.title, { body: f.body });
+    }
+    if (list.length) loadMemory();
+  } catch {}
+}, 10000);
+if ("Notification" in window && Notification.permission === "default") document.addEventListener("click", () => Notification.requestPermission(), { once: true });
+
+// ---- inbox: projects, tasks, notes, reminders ----
+let inboxTab = "projects";
+$("tabs").querySelectorAll("button").forEach(b => b.onclick = () => openIdeas(b.dataset.tab));
+async function saveList(key, list) { await saveMemory({ [key]: list }); openIdeas(inboxTab); }
+async function openIdeas(tab = inboxTab) {
+  inboxTab = tab;
+  await loadMemory();
+  const P = memory.projects || [], T = memory.tasks || [], N = memory.notes || [], R = memory.reminders || [];
+  $("nProjects").textContent = P.length; $("nTasks").textContent = T.filter(t => !t.done).length; $("nNotes").textContent = N.length; $("nRem").textContent = R.filter(r => !r.done).length;
+  $("tabs").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  const L = $("ideasList");
+  if (tab === "projects") {
+    L.innerHTML = P.length ? P.map((p, i) => `
+      <li><div class="t"><span>${esc(p.title)}</span><span>${fmtWhen(p.at)}</span></div>
+      <div class="tag">${esc(p.tagline || "")}${p.idea ? ` · “${esc(p.idea.slice(0, 80))}”` : ""}</div>
+      <div class="links">
+        <a href="${esc(p.repo)}" target="_blank">📦 Repo</a>
+        ${p.pr ? `<a href="${esc(p.pr)}" target="_blank">🔀 PR</a>` : ""}
+        ${p.agentUrl ? `<a href="${esc(p.agentUrl)}" target="_blank" id="ag${i}">🤖 Cursor agent</a>` : ""}
+        <a href="${esc(p.repo)}/blob/main/SPEC.md" target="_blank">📄 Spec</a>
+        <a href="#" data-export="${esc(p.repo)}">⌨️ Export to Cursor</a>
+        <a href="${esc(p.repo)}/archive/refs/heads/main.zip">⬇️ .zip</a>
+      </div>
+      <div class="links">
+        <a href="#" data-pjob="research" data-slug="${esc(p.slug)}">🔬 Research</a>
+        <a href="#" data-pjob="docs" data-slug="${esc(p.slug)}">📄 Docs</a>
+        <a href="#" data-pjob="pitch" data-slug="${esc(p.slug)}">🎯 Pitch</a>
+        <a href="#" data-premind="${esc(p.slug)}" data-title="${esc(p.title)}">🔔 Get back to me Fri</a>
+      </div></li>`).join("") : `<li class="muted">No projects yet. Capture an idea and press Ship.</li>`;
+    L.querySelectorAll("[data-export]").forEach(a => a.onclick = (ev) => { ev.preventDefault(); exportToCursor(a.dataset.export, a); });
+    L.querySelectorAll("[data-pjob]").forEach(a => a.onclick = async (ev) => { ev.preventDefault(); a.textContent = "⏳ running…"; await fetch("/api/jobs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: a.dataset.pjob, project: a.dataset.slug }) }); a.textContent = "✓ queued, I'll notify you"; });
+    L.querySelectorAll("[data-premind]").forEach(a => a.onclick = async (ev) => { ev.preventDefault(); const r = await (await fetch("/api/reminders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: `Check back on ${a.dataset.title}: agent progress, PRs, next decision.`, ref: a.dataset.premind }) })).json(); a.textContent = `🔔 ${fmtWhen(r.at)}`; });
+    P.forEach(async (p, i) => {
+      if (!p.agentId) return;
+      try { const a = await (await fetch(`/api/agent/${p.agentId}`)).json(); const el = $("ag" + i); if (el && a.status) el.textContent = `🤖 Cursor: ${a.status.toLowerCase()}`; if (a.prUrl && el) el.insertAdjacentHTML("afterend", `<a href="${esc(a.prUrl)}" target="_blank">🔀 PR</a>`); } catch {}
+    });
+  }
+  if (tab === "tasks") {
+    const sorted = [...T].sort((a, b) => (a.done - b.done) || String(a.due || "9").localeCompare(String(b.due || "9")));
+    L.innerHTML = sorted.length ? sorted.map(t => `
+      <li class="task ${t.done ? "done" : ""}"><input type="checkbox" data-id="${t.id}" ${t.done ? "checked" : ""}/>
+      <div style="flex:1;min-width:0"><div class="tt">${esc(t.title)}</div>${t.body && t.body !== t.title ? `<div class="tag">${esc(t.body)}</div>` : ""}
+      <div class="meta">${t.due ? `<span class="due">due ${fmtWhen(t.due)}</span>` : ""}${(t.tags || []).map(x => `<span>#${esc(x)}</span>`).join("")}</div></div>
+      <button class="del" data-del="${t.id}" title="Delete">×</button></li>`).join("") : `<li class="muted">No tasks. Try “Task: send the invoice Friday”.</li>`;
+    L.querySelectorAll("input[type=checkbox]").forEach(c => c.onchange = () => saveList("tasks", T.map(t => t.id === c.dataset.id ? { ...t, done: c.checked } : t)));
+    L.querySelectorAll("[data-del]").forEach(b => b.onclick = () => saveList("tasks", T.filter(t => t.id !== b.dataset.del)));
+  }
+  if (tab === "notes") {
+    L.innerHTML = N.length ? N.map(n => `
+      <li><div class="t"><span>${esc(n.title)}</span><span>${fmtWhen(n.at)}</span></div>
+      <div class="tag" style="white-space:pre-wrap;max-height:160px;overflow:auto">${esc((n.body || "").slice(0, 1500))}</div>
+      <div class="meta">${(n.tags || []).map(x => `<span>#${esc(x)}</span>`).join("")}${n.url ? `<a href="${esc(n.url)}" target="_blank" style="font-size:12px;color:#a5b0ff">open in repo ↗</a>` : ""}<button class="del" data-del="${n.id}" title="Delete">×</button></div></li>`).join("") : `<li class="muted">No notes yet. Research and docs jobs also land here.</li>`;
+    L.querySelectorAll("[data-del]").forEach(b => b.onclick = () => saveList("notes", N.filter(n => n.id !== b.dataset.del)));
+  }
+  if (tab === "reminders") {
+    L.innerHTML = `<li><div class="t"><span>🗓️ Weekly check-in</span><span>Fridays 5pm</span></div><div class="tag">Every Friday at 5pm, I summarize your projects, agent progress, open tasks and notes, then notify you.</div><div class="links"><a href="#" id="digestNow">Run the check-in now</a></div></li>` +
+      (R.length ? R.map(r => `<li class="task ${r.done ? "done" : ""}"><div style="flex:1"><div class="tt">${esc(r.text)}</div><div class="meta"><span class="due">${r.done ? "sent" : "🔔 " + fmtWhen(r.at)}</span>${r.ref ? `<span>📁 ${esc(r.ref)}</span>` : ""}</div></div><button class="del" data-del="${r.id}">×</button></li>`).join("") : `<li class="muted">No reminders. Try “remind me to check the roomie app by end of the week”.</li>`);
+    L.querySelectorAll("[data-del]").forEach(b => b.onclick = () => saveList("reminders", R.filter(r => r.id !== b.dataset.del)));
+    $("digestNow").onclick = async (ev) => { ev.preventDefault(); ev.target.textContent = "⏳ writing your check-in…"; const r = await fetch("/api/digest", { method: "POST" }); const j = await r.json(); ev.target.textContent = r.ok ? "✓ Sent: see Notes" : "failed"; if (!r.ok) msg(j.error, true); };
+  }
+  showView("inbox");
+  $("inboxTitle").textContent = { projects: "Projects", tasks: "Tasks", notes: "Notes", reminders: "Reminders" }[tab];
+  $("inboxSub").textContent = { projects: "Agents keep building in the background. Check back whenever you're free.", tasks: "Everyday to-dos captured on the fly, sorted by due date.", notes: "Thoughts, research and docs. Background jobs land here too.", reminders: "I'll get back to you at these times, plus a weekly check-in on Fridays." }[tab];
+}
+$("ideasBtn").onclick = () => openIdeas();
+$("ideasRefresh").onclick = () => openIdeas(inboxTab);
+$("ideasClose").onclick = () => showView("studio");
+function showView(v) {
+  $("studioView").hidden = v !== "studio"; $("ideasModal").hidden = v !== "inbox";
+  $("navStudio").classList.toggle("on", v === "studio");
+  if (v === "studio") $("tabs").querySelectorAll("button").forEach(b => b.classList.remove("on"));
+}
+$("navStudio").onclick = () => showView("studio");
+document.querySelectorAll("[data-ex]").forEach(b => b.onclick = () => { $("edit").value = b.dataset.ex; submit(b.dataset.ex); });
+$("shipBtn").onclick = shipIt;
+
+async function exportToCursor(repo, el) {
+  repo = repo || idea.repo?.url;
+  if (!repo) return msg("Ship the idea first, then export it to Cursor.", true);
+  const label = el?.textContent; if (el) el.textContent = "⏳ cloning…";
+  try {
+    const r = await fetch("/api/export", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ repo }) });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error);
+    toast(j.openedIn === "Cursor" ? `⌨️ Opened in Cursor: ${j.dir}` : `📁 Cloned to ${j.dir}. Cursor isn't installed here, so it opened in Finder`);
+    if (el) el.textContent = j.openedIn === "Cursor" ? "✅ Opened in Cursor" : "✅ Cloned locally";
+  } catch (e) { msg("Export failed: " + (e.message || e), true); if (el) el.textContent = label; }
+}
+$("exportBtn").onclick = () => exportToCursor();
+
+// Remember the user's own words as the idea (not the suggestion chip text).
+const _askIntent = askIntent;
+askIntent = (text, opts = {}) => { if (!opts.afterBuild && (!currentHtml || shipped)) idea.pending = String(text || "").trim(); return _askIntent(text, opts); };
+
+function setButtons() {
+  for (const id of ["snapBtn", "editBtn", "voiceBtn", "uploadBtn"]) $(id).disabled = busy;
+  $("shipBtn").disabled = busy || shipping || !currentHtml || shipped;
+  $("exportBtn").disabled = !shipped;
+}
+
+// ---- voice ----
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function voice() {
+  if (!SR) return msg("Voice not supported in this browser — type the change instead.", true);
+  if (busy) return;
+  const r = new SR(); r.lang = "en-US"; r.interimResults = true;
+  status("listening…", "live");
+  r.onresult = (e) => { $("edit").value = Array.from(e.results).map(x => x[0].transcript).join(""); };
+  r.onerror = () => status("voice error");
+  r.onend = () => { status("ready", "ok"); const t = $("edit").value.trim(); if (t) submit(t); };
+  r.start();
+}
+
+// ---- upload / drop ----
+function useFile(f) {
+  if (!f || !f.type.startsWith("image/")) return;
+  const fr = new FileReader();
+  fr.onload = () => attachPhoto(fr.result);
+  fr.readAsDataURL(f);
+}
+$("file").onchange = (e) => useFile(e.target.files[0]);
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("drop", (e) => { e.preventDefault(); useFile(e.dataTransfer.files[0]); });
+
+// ---- wiring ----
+$("snapBtn").onclick = snapAndBuild;
+$("editBtn").onclick = () => submit($("edit").value);
+$("voiceBtn").onclick = voice;
+$("uploadBtn").onclick = () => $("file").click();
+$("retakeBtn").onclick = liveCam;
+$("openBtn").onclick = () => { const w = window.open(); w.document.write(currentHtml); w.document.close(); };
+// Enter = ask Grok what I mean (suggestions). Shift+Enter = just do it literally.
+$("edit").addEventListener("keydown", (e) => { if (e.key === "Enter") e.shiftKey ? applyEdit() : submit($("edit").value); });
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { hideTray(); closeMemory(); unfreeze(); return; }
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+  if (["1", "2", "3"].includes(e.key) && suggestions.length) { pick(+e.key - 1); return; }
+  if (e.key === "m" || e.key === "M") { openMemory(); return; }
+  if (e.key === "s" || e.key === "S") { shipIt(); return; }
+  if (e.key === "i" || e.key === "I") { openIdeas(); return; }
+  if (e.key === "n" || e.key === "N") { e.preventDefault(); newChat(); return; }
+  if (e.code === "Space") { e.preventDefault(); snapAndBuild(); }
+  if (e.key === "v" || e.key === "V") voice();
+  if (e.key === "e" || e.key === "E") { e.preventDefault(); $("edit").focus(); }
+});
+
+// ---- chats: New chat (no reload) + History (auto-saved, restorable) ----
+function pipeSnapshot() {
+  return [...document.querySelectorAll("#pipe .step")].map(el => { const a = el.querySelector("a"); return { s: el.dataset.s, cls: el.className.replace("step", "").trim(), text: a.textContent, href: a.getAttribute("href") }; });
+}
+async function saveSession() {
+  if (!currentHtml && !idea.text) return;
+  const title = $("curTitle").textContent && $("curTitle").textContent !== "Nothing yet" ? $("curTitle").textContent : (idea.text || "Untitled").slice(0, 60);
+  await fetch("/api/sessions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
+    id: idea.project, title, idea: idea.text || "", html: currentHtml, shipped, repo: idea.repo?.url || null, repoName: idea.repo?.name || null,
+    steps: pipeSnapshot(), addr: $("addr").textContent }) }).catch(() => {});
+  loadMemory();
+}
+function resetStudio() {
+  hideTray(); try { hideSee(); } catch {}
+  suggestions = []; steps = [];
+  currentHtml = ""; shipped = false; shipping = false;
+  try { const d = iframe.contentDocument; d.open(); d.write(""); d.close(); } catch {} iframe.removeAttribute("srcdoc");
+  $("empty").style.display = ""; $("badge").classList.remove("show");
+  $("codeText").innerHTML = ""; $("stats").textContent = "0 chars"; $("timer").textContent = "0.0s";
+  $("addr").textContent = "prototype · not started"; $("curTitle").textContent = "Nothing yet";
+  $("edit").value = ""; $("hint").value = ""; resetPipe();
+  cam.classList.remove("shot", "mini"); if (video.srcObject) $("camLabel").textContent = "live camera";
+}
+function newChat() {
+  const running = runs[idea.project];
+  if (!running && currentHtml) saveSession();
+  detachRuns();
+  resetStudio();
+  idea = { text: "", image: null, project: "draft-" + Date.now() };
+  setButtons(); showView("studio"); status("ready", "ok"); msg("");
+  document.querySelectorAll(".hitem").forEach(h => h.classList.remove("on"));
+  $("edit").focus();
+}
+function restoreSession(id) {
+  const sess = (memory.sessions || []).find(x => x.id === id); if (!sess) return;
+  if (currentHtml && idea.project !== id && !runs[idea.project]) saveSession();
+  detachRuns();
+  resetStudio();
+  idea = { text: sess.idea || "", image: null, project: sess.id, repo: sess.repo ? { url: sess.repo, name: sess.repoName } : undefined };
+  shipped = !!sess.shipped; currentHtml = sess.html || "";
+  if (currentHtml) { $("empty").style.display = "none"; iframe.srcdoc = currentHtml; }
+  for (const st of sess.steps || []) setStep(st.s, st.cls, st.text, st.href);
+  $("curTitle").textContent = sess.title || "Untitled"; $("addr").textContent = sess.addr || "prototype";
+  $("codeText").textContent = currentHtml.slice(-900);
+  const live = runs[id];
+  if (live?.kind === "ship") { live.fg = true; shipping = true; for (const st of Object.values(live.steps)) setStep(st.s, st.cls, st.text, st.href); status("shipping in the background…", "live"); }
+  else if (live?.kind === "build") { $("empty").style.display = ""; status("still building in the background… it will open here when done", "live"); }
+  else status("restored", "ok");
+  setButtons(); showView("studio");
+  renderHistory();
+}
+function renderHistory() {
+  const list = memory.sessions || [];
+  $("histList").innerHTML = list.length ? list.slice(0, 30).map(h => `
+    <button class="hitem ${h.id === idea?.project ? "on" : ""}" data-h="${esc(h.id)}" title="${esc(h.idea || h.title)}">
+      <span class="ht">${h.shipped ? "🚀 " : ""}${esc(h.title || "Untitled")}</span>
+      <span class="hx" data-del="${esc(h.id)}" title="Delete">×</span>
+      <span class="hm">${runs[h.id] ? (runs[h.id].kind === "ship" ? "🚀 shipping…" : "⏳ building…") : fmtWhen(h.updated) + (h.repoName ? " · " + esc(h.repoName.split("/")[1]) : "")}</span>
+    </button>`).join("") : `<div class="histempty">Your chats will appear here.</div>`;
+  $("histList").querySelectorAll(".hitem").forEach(b => b.onclick = (e) => {
+    if (e.target.dataset.del) { e.stopPropagation(); fetch("/api/sessions/delete", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: e.target.dataset.del }) }).then(loadMemory); return; }
+    restoreSession(b.dataset.h);
+  });
+}
+$("newChatBtn").onclick = newChat;
+
+// ---- preflight: are Grok, GitHub and Cursor reachable? (on load, every 60s, and on click) ----
+async function preflight() {
+  for (const id of ["pfGrok", "pfGh", "pfCursor"]) $(id).className = "pf";
+  try {
+    const p = await (await fetch("/api/preflight")).json();
+    const set = (id, c) => { $(id).className = "pf " + (!c.ok ? "bad" : c.fallback ? "warn" : "ok"); $(id).title = c.detail; };
+    set("pfGrok", p.grok); set("pfGh", p.github); set("pfCursor", p.cursor);
+    $("preflight").title = `Grok: ${p.grok.detail}\nGitHub: ${p.github.detail}\nCursor: ${p.cursor.detail}\n(click to re-check)`;
+    if (!p.grok.ok) msg("⚠️ Grok is unreachable: " + p.grok.detail, true);
+    else if (!p.github.ok) msg("⚠️ GitHub is unreachable, so Ship won't work: " + p.github.detail, true);
+  } catch { for (const id of ["pfGrok", "pfGh", "pfCursor"]) $(id).className = "pf bad"; msg("⚠️ The server isn't responding. Restart it with: node server.mjs", true); }
+}
+$("preflight").onclick = preflight;
+preflight(); setInterval(preflight, 60000);
+
+// ---- photos (upload / drop): show it, let the agent suggest, and let the user type what they want ----
+async function attachPhoto(img) {
+  showView("studio"); hideTray();
+  cam.classList.remove("shot", "mini"); cam.classList.add("on");
+  freeze(img); $("camLabel").textContent = "photo · pick an option or type what you want";
+  showAgent({ summary: "Looking at your photo…", actions: [] }, img, null);
+  let res = null;
+  try { res = await see(img, "high", "watch"); } catch (e) { msg("Vision agent failed: " + (e.message || e), true); }
+  if (cam.classList.contains("frozen") && frozenImg === img) showAgent(res || { summary: "What should I make with this?", actions: [] }, img, null);
+}
+// Build with the real photo embedded in the prototype (hosted locally so the page can show it).
+async function buildFromPhoto(img, instruction) {
+  if (busy) return msg("A build is already running in this chat. Start a New chat to run another in parallel.", true);
+  unfreeze(); hideSee();
+  let assetUrl = null;
+  try { const r = await fetch("/api/upload", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: img }) }); assetUrl = (await r.json()).url; } catch {}
+  newIdea({ image: img, text: instruction });
+  showShot(img);
+  stream("/api/generate", { image: img, hint: instruction, assetUrl }, "building with your photo…");
+}
+
+// ---- Grok Bot → studio: live commands from the Grok Bot connector (MCP) ----
+(function listenForGrokBot() {
+  const es = new EventSource("/api/events");
+  es.onmessage = (m) => {
+    let e; try { e = JSON.parse(m.data); } catch { return; }
+    if (e.type === "build") {
+      showView("studio");
+      if (busy || currentHtml || cam.classList.contains("frozen")) newChat(); // keep whatever was running; it continues in the background
+      toast(`🤖 Grok Bot asked me to build: ${e.idea.slice(0, 90)}`);
+      $("edit").value = e.idea;
+      applyEdit(e.idea);
+      setStep("idea", "done", "via Grok Bot");
+    }
+    if (e.type === "ship") { if (currentHtml && !shipped && !busy) { toast("🤖 Grok Bot is shipping this"); shipIt(); } else toast("🤖 Grok Bot wanted to ship, but there's nothing ready to ship here yet."); }
+    if (e.type === "toast") toast(e.text);
+    if (e.type === "refresh") loadMemory();
+  };
+  es.onerror = () => {}; // EventSource reconnects on its own
+})();
+</script>
+</body>
+</html>
